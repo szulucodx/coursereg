@@ -21,13 +21,18 @@ async function requireAuth() {
     window.location.href = '/';
     return null;
   }
-  return data.student;
+  return data.user || data.student;
 }
 
 // ── Render nav student name ───────────────────────────────────
-function setNavUser(student) {
+function setNavUser(user) {
   const el = document.getElementById('nav-username');
-  if (el) el.textContent = `${student.firstName} ${student.lastName}`;
+  if (!el || !user) return;
+  if (user.role === 'admin') {
+    el.textContent = user.fullName || user.email;
+    return;
+  }
+  el.textContent = `${user.firstName} ${user.lastName}`;
 }
 
 // ── Logout ────────────────────────────────────────────────────

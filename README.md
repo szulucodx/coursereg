@@ -80,6 +80,16 @@ Go to:
 
 ---
 
+## Test Logins
+- Admin
+  - Email: admin@bfu.ac.zm
+  - Password: admin123
+- Student
+  - Email: test@student.com
+  - Password: password
+
+---
+
 ## Troubleshooting
 - **Cannot connect to database**: Make sure MySQL is running in XAMPP
 - **Port 3000 already in use**: Set `PORT=3001` in `.env`

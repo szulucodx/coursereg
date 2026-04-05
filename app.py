@@ -29,6 +29,18 @@ def _json_error(message, status=200):
     return jsonify({'success': False, 'message': message}), status
 
 
+def require_authenticated_session(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if 'student' not in session and 'admin' not in session:
+            if request.path.startswith('/api/'):
+                return _json_error('Please log in first.')
+            return redirect('/')
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
 def require_student_session(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
@@ -41,10 +53,22 @@ def require_student_session(view):
     return wrapped
 
 
+def require_admin_session(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if 'admin' not in session:
+            if request.path.startswith('/api/'):
+                return _json_error('Admin login required.')
+            return redirect('/')
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
 def redirect_if_logged_in(view):
     @wraps(view)
     def wrapped(*args, **kwargs):
-        if 'student' in session:
+        if 'student' in session or 'admin' in session:
             return redirect('/dashboard')
         return view(*args, **kwargs)
 
@@ -53,6 +77,14 @@ def redirect_if_logged_in(view):
 
 def _current_student():
     return session.get('student')
+
+
+def _current_admin():
+    return session.get('admin')
+
+
+def _current_user():
+    return _current_admin() or _current_student()
 
 
 @app.get('/')
@@ -82,7 +114,7 @@ def my_courses_page():
 
 
 @app.get('/dashboard')
-@require_student_session
+@require_authenticated_session
 def dashboard_page():
     return send_from_directory(ADMIN_PAGE_DIR, 'dashboard.html')
 
@@ -152,6 +184,26 @@ def login():
         email = (payload.get('email') or '').strip().lower()
         password = payload.get('password') or ''
 
+        admin_rows = db.query(
+            'SELECT * FROM Admin WHERE Email = %s AND IsActive = 1',
+            (email,),
+        )
+        if admin_rows:
+            admin = admin_rows[0]
+            if not check_password_hash(admin['PasswordHash'], password):
+                return jsonify({'success': False, 'message': 'Invalid email or password.'})
+
+            session.clear()
+            session.permanent = True
+            session['admin'] = {
+                'id': admin['AdminID'],
+                'fullName': admin['FullName'],
+                'email': admin['Email'],
+                'role': 'admin',
+            }
+
+            return jsonify({'success': True, 'user': session['admin']})
+
         rows = db.query('SELECT * FROM Student WHERE Email = %s', (email,))
         if not rows:
             return jsonify({'success': False, 'message': 'Invalid email or password.'})
@@ -169,9 +221,10 @@ def login():
             'email': student['Email'],
             'programme': student['Programme'],
             'year': student['YearOfStudy'],
+            'role': 'student',
         }
 
-        return jsonify({'success': True, 'student': session['student']})
+        return jsonify({'success': True, 'user': session['student']})
     except Exception as exc:
         print(exc)
         return _json_error('Server error. Please try again.')
@@ -185,9 +238,12 @@ def logout():
 
 @app.get('/api/auth/session')
 def auth_session():
-    student = _current_student()
-    if student:
-        return jsonify({'loggedIn': True, 'student': student})
+    user = _current_user()
+    if user:
+        payload = {'loggedIn': True, 'user': user}
+        if user.get('role') == 'student':
+            payload['student'] = user
+        return jsonify(payload)
     return jsonify({'loggedIn': False})
 
 
@@ -407,6 +463,7 @@ def drop_enrollment():
 
 
 @app.get('/api/reports/enrolment')
+@require_admin_session
 def enrolment_report():
     try:
         rows = db.query(

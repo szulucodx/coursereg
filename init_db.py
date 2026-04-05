@@ -27,6 +27,7 @@ def main():
             'DROP TABLE IF EXISTS Course',
             'DROP TABLE IF EXISTS Lecturer',
             'DROP TABLE IF EXISTS Department',
+            'DROP TABLE IF EXISTS Admin',
             'DROP TABLE IF EXISTS Student',
             '''
             CREATE TABLE Student (
@@ -42,6 +43,16 @@ def main():
               PasswordHash VARCHAR(255) NOT NULL,
               CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               CHECK (YearOfStudy IS NULL OR YearOfStudy >= 1)
+            )
+            ''',
+            '''
+            CREATE TABLE Admin (
+              AdminID INT AUTO_INCREMENT PRIMARY KEY,
+              FullName VARCHAR(150) NOT NULL,
+              Email VARCHAR(100) UNIQUE NOT NULL,
+              PasswordHash VARCHAR(255) NOT NULL,
+              IsActive BOOLEAN DEFAULT TRUE,
+              CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             ''',
             '''
@@ -155,7 +166,20 @@ def main():
         execute_statements(connection, statements)
 
         sample_hash = generate_password_hash('password')
+        admin_hash = generate_password_hash('admin123')
         with connection.cursor() as cursor:
+            cursor.execute(
+                '''
+                INSERT INTO Admin (FullName, Email, PasswordHash)
+                VALUES (%s, %s, %s)
+                ''',
+                (
+                    'System Administrator',
+                    'admin@bfu.ac.zm',
+                    admin_hash,
+                ),
+            )
+
             cursor.execute(
                 '''
                 INSERT INTO Student (NationalID, FirstName, LastName, Email, Phone, DateOfBirth, Programme, YearOfStudy, PasswordHash)
@@ -186,8 +210,9 @@ def main():
 
         print('✅ Database initialized successfully!')
         print(f'✅ Database: {os.getenv("DB_NAME", "BrightFutureUniversity")}')
-        print('✅ Tables created: Student, Department, Lecturer, Course, CoursePrerequisite, Enrollment')
+        print('✅ Tables created: Student, Admin, Department, Lecturer, Course, CoursePrerequisite, Enrollment')
         print('\n📋 Sample Data Added:')
+        print('   - 1 Admin (email: admin@bfu.ac.zm, password: admin123)')
         print('   - 5 Departments')
         print('   - 5 Lecturers')
         print('   - 9 Courses')

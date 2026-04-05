@@ -14,8 +14,8 @@
   <div class="container">
     <span class="navbar-brand">🎓 BFU Portal</span>
     <div class="d-flex align-items-center gap-3">
-      <a href="/courses"    class="nav-link">Browse Courses</a>
-      <a href="/my-courses" class="nav-link">My Courses</a>
+      <a href="/courses"    class="nav-link" id="navCourses">Browse Courses</a>
+      <a href="/my-courses" class="nav-link" id="navMyCourses">My Courses</a>
       <span class="text-white-50">|</span>
       <span class="text-white fw-semibold" id="nav-username"></span>
       <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button>
@@ -35,19 +35,19 @@
     <div class="col-md-4">
       <div class="card stat-card p-4">
         <div class="stat-num" id="statActive">—</div>
-        <div class="text-muted fw-semibold">Active Enrolments</div>
+        <div class="text-muted fw-semibold" id="labelActive">Active Enrolments</div>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card stat-card p-4" style="border-left-color:#27ae60;">
         <div class="stat-num" style="color:#27ae60;" id="statCompleted">—</div>
-        <div class="text-muted fw-semibold">Completed Courses</div>
+        <div class="text-muted fw-semibold" id="labelCompleted">Completed Courses</div>
       </div>
     </div>
     <div class="col-md-4">
       <div class="card stat-card p-4" style="border-left-color:#d6a021;">
         <div class="stat-num" style="color:#d6a021;" id="statCredits">—</div>
-        <div class="text-muted fw-semibold">Credit Hours This Semester</div>
+        <div class="text-muted fw-semibold" id="labelCredits">Credit Hours This Semester</div>
       </div>
     </div>
   </div>
@@ -78,26 +78,53 @@
 <script src="/js/app.js"></script>
 <script>
   (async () => {
-    const student = await requireAuth();
-    if (!student) return;
-    setNavUser(student);
-    document.getElementById('studentName').textContent = student.firstName;
-    document.getElementById('studentInfo').textContent =
-      `${student.programme} · Year ${student.year} · ${student.email}`;
+    const user = await requireAuth();
+    if (!user) return;
 
-    // Load enrollment stats
+    setNavUser(user);
+
+    if (user.role === 'admin') {
+      document.getElementById('studentName').textContent = user.fullName || 'Administrator';
+      document.getElementById('studentInfo').textContent = `Admin Account · ${user.email}`;
+
+      document.getElementById('navCourses').style.display = 'none';
+      document.getElementById('navMyCourses').style.display = 'none';
+
+      document.getElementById('labelCompleted').textContent = 'Average Fill Rate (%)';
+      document.getElementById('labelCredits').textContent = 'Courses At Capacity';
+
+      const res = await fetch('/api/reports/enrolment');
+      const data = await res.json();
+      if (data.success) {
+        const totalActive = data.report.reduce((sum, row) => sum + Number(row.ActiveEnrolments || 0), 0);
+        const totalFillRate = data.report.reduce((sum, row) => sum + Number(row.FillRatePct || 0), 0);
+        const avgFillRate = data.report.length ? (totalFillRate / data.report.length).toFixed(1) : '0.0';
+        const fullCourses = data.report.filter(row => Number(row.FillRatePct || 0) >= 100).length;
+
+        document.getElementById('statActive').textContent = totalActive;
+        document.getElementById('statCompleted').textContent = avgFillRate;
+        document.getElementById('statCredits').textContent = fullCourses;
+      }
+      return;
+    }
+
+    document.getElementById('studentName').textContent = user.firstName;
+    document.getElementById('studentInfo').textContent =
+      `${user.programme} · Year ${user.year} · ${user.email}`;
+
     const res  = await fetch('/api/enrollment/my');
     const data = await res.json();
-    if (data.success) {
-      const active    = data.enrollments.filter(e => e.Status === 'Active').length;
-      const completed = data.enrollments.filter(e => e.Status === 'Completed').length;
-      const credits   = data.enrollments
-        .filter(e => e.Status === 'Active')
-        .reduce((sum, e) => sum + e.CreditHours, 0);
-      document.getElementById('statActive').textContent    = active;
-      document.getElementById('statCompleted').textContent = completed;
-      document.getElementById('statCredits').textContent   = credits;
-    }
+    if (!data.success) return;
+
+    const active = data.enrollments.filter(e => e.Status === 'Active').length;
+    const completed = data.enrollments.filter(e => e.Status === 'Completed').length;
+    const credits = data.enrollments
+      .filter(e => e.Status === 'Active')
+      .reduce((sum, e) => sum + e.CreditHours, 0);
+
+    document.getElementById('statActive').textContent = active;
+    document.getElementById('statCompleted').textContent = completed;
+    document.getElementById('statCredits').textContent = credits;
   })();
 </script>
 </body>
