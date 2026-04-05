@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>My Courses — BFU</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container">
+    <a href="/dashboard" class="navbar-brand">🎓 BFU Portal</a>
+    <div class="d-flex align-items-center gap-3">
+      <a href="/courses"    class="nav-link">Browse Courses</a>
+      <a href="/my-courses" class="nav-link active">My Courses</a>
+      <span class="text-white-50">|</span>
+      <span class="text-white fw-semibold" id="nav-username"></span>
+      <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button>
+    </div>
+  </div>
+</nav>
+
+<div class="container py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="fw-bold" style="color:#1A3C5E;">My Enrolled Courses</h3>
+    <a href="/courses" class="btn btn-primary">+ Enrol in New Course</a>
+  </div>
+
+  <!-- Stats row -->
+  <div class="row g-3 mb-4" id="statsRow">
+    <div class="col-6 col-md-3">
+      <div class="card p-3 text-center stat-card">
+        <div class="stat-num" id="s-active">—</div>
+        <div class="text-muted small fw-semibold">Active</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card p-3 text-center stat-card" style="border-left-color:#27ae60;">
+        <div class="stat-num" style="color:#27ae60;" id="s-completed">—</div>
+        <div class="text-muted small fw-semibold">Completed</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card p-3 text-center stat-card" style="border-left-color:#c0392b;">
+        <div class="stat-num" style="color:#c0392b;" id="s-dropped">—</div>
+        <div class="text-muted small fw-semibold">Dropped</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card p-3 text-center stat-card" style="border-left-color:#d6a021;">
+        <div class="stat-num" style="color:#d6a021;" id="s-credits">—</div>
+        <div class="text-muted small fw-semibold">Active Credits</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Enrollments table -->
+  <div class="card">
+    <div class="card-header" style="background:#1A3C5E; color:white;">
+      📋 Enrolment History
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-striped mb-0">
+          <thead>
+            <tr>
+              <th>Code</th>
+              <th>Course Name</th>
+              <th>Department</th>
+              <th>Lecturer</th>
+              <th>Credits</th>
+              <th>Semester</th>
+              <th>Grade</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="enrollTable">
+            <tr><td colspan="9" class="text-center py-4 text-muted">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Course Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#1A3C5E; color:white;">
+        <h5 class="modal-title">Course Details</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+          <div>
+            <div class="fw-bold fs-5" id="details-code"></div>
+            <div class="text-muted" id="details-name"></div>
+          </div>
+          <div class="text-end">
+            <div class="badge dept-badge" style="background:#1A3C5E;" id="details-dept"></div>
+            <div class="mt-2 fw-semibold text-muted small" id="details-credit"></div>
+          </div>
+        </div>
+        <p class="text-muted mb-3" id="details-description"></p>
+        <div class="row g-3">
+          <div class="col-md-4"><div class="p-3 rounded bg-light"><div class="small text-muted">Lecturer</div><div class="fw-semibold" id="details-lecturer"></div></div></div>
+          <div class="col-md-4"><div class="p-3 rounded bg-light"><div class="small text-muted">Semester</div><div class="fw-semibold" id="details-semester"></div></div></div>
+          <div class="col-md-4"><div class="p-3 rounded bg-light"><div class="small text-muted">Capacity</div><div class="fw-semibold" id="details-seats"></div></div></div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Drop Confirm Modal -->
+<div class="modal fade" id="dropModal" tabindex="-1">
+  <div class="modal-dialog modal-sm">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Drop Course?</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        Are you sure you want to drop <strong id="dropCourseName"></strong>? This cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button class="btn btn-danger fw-bold" id="confirmDropBtn">Drop Course</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/app.js"></script>
+<script>
+  let dropModal;
+  let detailsModal;
+  let allEnrollments = [];
+  let selectedEnrollID = null;
+
+  (async () => {
+    const student = await requireAuth();
+    if (!student) return;
+    setNavUser(student);
+    dropModal = new bootstrap.Modal(document.getElementById('dropModal'));
+    detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
+    await loadEnrollments();
+  })();
+
+  async function loadEnrollments() {
+    const res  = await fetch('/api/enrollment/my');
+    const data = await res.json();
+    if (!data.success) return;
+
+    const enrollments = data.enrollments;
+    allEnrollments = enrollments;
+
+    // Stats
+    const active    = enrollments.filter(e => e.Status === 'Active').length;
+    const completed = enrollments.filter(e => e.Status === 'Completed').length;
+    const dropped   = enrollments.filter(e => e.Status === 'Dropped').length;
+    const credits   = enrollments.filter(e => e.Status === 'Active')
+                        .reduce((s, e) => s + e.CreditHours, 0);
+    document.getElementById('s-active').textContent    = active;
+    document.getElementById('s-completed').textContent = completed;
+    document.getElementById('s-dropped').textContent   = dropped;
+    document.getElementById('s-credits').textContent   = credits;
+
+    // Table
+    const tbody = document.getElementById('enrollTable');
+    if (enrollments.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">
+        No enrolments yet. <a href="/courses">Browse courses</a> to enrol.
+      </td></tr>`;
+      return;
+    }
+
+    const statusColors = {
+      Active:    '#27ae60', Completed: '#2980b9',
+      Dropped:   '#c0392b', Waitlisted:'#e67e22', Failed:'#7f8c8d'
+    };
+
+    tbody.innerHTML = enrollments.map(e => `
+      <tr>
+        <td><span class="fw-bold" style="color:#1A3C5E;">${e.CourseCode}</span></td>
+        <td>${e.CourseName}</td>
+        <td><span class="badge dept-badge" style="background:#1A3C5E;">${e.DepartmentName}</span></td>
+        <td>${e.LecturerName || 'TBA'}</td>
+        <td class="text-center">${e.CreditHours}</td>
+        <td>${e.Semester}</td>
+        <td class="text-center fw-bold">${e.Grade || '—'}</td>
+        <td>
+          <span class="badge" style="background:${statusColors[e.Status] || '#999'};">
+            ${e.Status}
+          </span>
+        </td>
+        <td>
+          <div class="d-flex gap-2">
+            <button class="btn btn-sm btn-outline-primary" onclick="openDetails('${e.CourseCode}')">Details</button>
+            ${e.Status === 'Active'
+              ? `<button class="btn btn-sm btn-outline-danger"
+                   onclick="openDropModal(${e.EnrollmentID}, '${e.CourseName.replace(/'/g,"\\'")}')">
+                   Drop
+                 </button>`
+              : '<span class="text-muted small align-self-center">—</span>'
+            }
+          </div>
+        </td>
+      </tr>`
+    ).join('');
+  }
+
+  function openDetails(code) {
+    const course = allEnrollments.find(e => e.CourseCode === code);
+    if (!course) return;
+
+    document.getElementById('details-code').textContent = course.CourseCode;
+    document.getElementById('details-name').textContent = course.CourseName;
+    document.getElementById('details-dept').textContent = course.DepartmentName;
+    document.getElementById('details-credit').textContent = `${course.CreditHours} Credit Hours`;
+    document.getElementById('details-description').textContent = course.Description || 'No course description available.';
+    document.getElementById('details-lecturer').textContent = course.LecturerName || 'TBA';
+    document.getElementById('details-semester').textContent = course.Semester;
+    document.getElementById('details-seats').textContent = course.MaxCapacity ? `${course.MaxCapacity} total seats` : 'Capacity not available';
+
+    detailsModal.show();
+  }
+
+  function openDropModal(id, name) {
+    selectedEnrollID = id;
+    document.getElementById('dropCourseName').textContent = name;
+    dropModal.show();
+  }
+
+  document.getElementById('confirmDropBtn').addEventListener('click', async () => {
+    const btn = document.getElementById('confirmDropBtn');
+    btn.disabled = true; btn.textContent = 'Dropping...';
+
+    const res  = await fetch('/api/enrollment/drop', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enrollmentID: selectedEnrollID })
+    });
+    const data = await res.json();
+
+    btn.disabled = false; btn.textContent = 'Drop Course';
+    dropModal.hide();
+
+    showToast(data.message, data.success ? 'success' : 'error');
+    if (data.success) await loadEnrollments();
+  });
+</script>
+</body>
+</html>

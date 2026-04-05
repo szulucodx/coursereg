@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Login — BFU Course Registration</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+  <div class="container">
+    <a href="/" class="navbar-brand">🎓 BFU Portal</a>
+    <div class="d-flex align-items-center gap-3">
+      <a href="/" class="nav-link active">Login</a>
+      <a href="/register" class="nav-link">Register</a>
+      <a href="/courses" class="nav-link">Browse Courses</a>
+      <a href="/my-courses" class="nav-link">My Courses</a>
+    </div>
+  </div>
+</nav>
+<div class="auth-wrapper">
+  <div class="auth-card card p-4 shadow-lg">
+    <div class="text-center mb-4">
+      <div style="font-size:2.5rem;">🎓</div>
+      <div class="auth-logo">Bright Future University</div>
+      <div class="text-muted" style="font-size:.9rem;">Course Registration Portal</div>
+    </div>
+
+    <div id="msg"></div>
+
+    <form id="loginForm">
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Email Address</label>
+        <input type="email" class="form-control" id="email" placeholder="you@bfu.ac.zm" required/>
+      </div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold">Password</label>
+        <input type="password" class="form-control" id="password" placeholder="Enter password" required/>
+      </div>
+      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="loginBtn">Login</button>
+    </form>
+
+    <hr/>
+    <p class="text-center mb-0" style="font-size:.9rem;">
+      New student? <a href="/register" class="fw-semibold">Register here</a>
+    </p>
+  </div>
+</div>
+
+<script>
+  // If already logged in, go to dashboard
+  fetch('/api/auth/session').then(r => r.json()).then(d => {
+    if (d.loggedIn) window.location.href = '/dashboard';
+  });
+
+  document.getElementById('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.textContent = 'Logging in...';
+
+    const res  = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:    document.getElementById('email').value,
+        password: document.getElementById('password').value
+      })
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      window.location.href = '/dashboard';
+    } else {
+      document.getElementById('msg').innerHTML =
+        `<div class="alert alert-danger">${data.message}</div>`;
+      btn.disabled = false;
+      btn.textContent = 'Login';
+    }
+  });
+</script>
+</body>
+</html>
