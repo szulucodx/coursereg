@@ -89,6 +89,8 @@ def _current_user():
 
 @app.get('/')
 @app.get('/login')
+@app.get('/login.php')
+@app.get('/courseReg/public/frontend/pages/login.php')
 @redirect_if_logged_in
 def login_page():
     return send_from_directory(PAGE_DIR, 'login.html')
@@ -96,18 +98,23 @@ def login_page():
 
 @app.get('/register')
 @app.get('/signup')
+@app.get('/register.php')
+@app.get('/courseReg/public/frontend/pages/register.php')
 @redirect_if_logged_in
 def register_page():
     return send_from_directory(PAGE_DIR, 'register.html')
 
 
 @app.get('/courses')
+@app.get('/courseReg/public/frontend/pages/courses.php')
 @require_student_session
 def courses_page():
     return send_from_directory(PAGE_DIR, 'courses.html')
 
 
 @app.get('/my-courses')
+@app.get('/my-courses.php')
+@app.get('/courseReg/public/frontend/pages/my-courses.php')
 @require_student_session
 def my_courses_page():
     return send_from_directory(PAGE_DIR, 'my-courses.html')

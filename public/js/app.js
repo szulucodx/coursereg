@@ -18,7 +18,7 @@ async function requireAuth() {
   const res  = await fetch('/api/auth/session');
   const data = await res.json();
   if (!data.loggedIn) {
-    window.location.href = '/';
+    window.location.href = '/login.php';
     return null;
   }
   return data.user || data.student;
@@ -38,5 +38,5 @@ function setNavUser(user) {
 // ── Logout ────────────────────────────────────────────────────
 async function logout() {
   await fetch('/api/auth/logout', { method: 'POST' });
-  window.location.href = '/';
+  window.location.href = '/login.php';
 }

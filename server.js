@@ -47,13 +47,34 @@ app.use('/api/reports',    reportRoutes);
 app.get('/', redirectIfLoggedIn, (req, res) =>
   res.sendFile(path.join(__dirname, 'public/frontend/pages/login.html'))
 );
+app.get('/login.php', redirectIfLoggedIn, (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/frontend/pages/login.html'))
+);
+app.get('/courseReg/public/frontend/pages/login.php', redirectIfLoggedIn, (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/frontend/pages/login.html'))
+);
 app.get('/register', redirectIfLoggedIn, (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/frontend/pages/register.html'))
+);
+app.get('/register.php', redirectIfLoggedIn, (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/frontend/pages/register.html'))
+);
+app.get('/courseReg/public/frontend/pages/register.php', redirectIfLoggedIn, (req, res) =>
   res.sendFile(path.join(__dirname, 'public/frontend/pages/register.html'))
 );
 app.get('/courses', requireStudentSession, (req, res) =>
   res.sendFile(path.join(__dirname, 'public/frontend/pages/courses.html'))
 );
+app.get('/courseReg/public/frontend/pages/courses.php', requireStudentSession, (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/frontend/pages/courses.html'))
+);
 app.get('/my-courses', requireStudentSession, (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/frontend/pages/my-courses.html'))
+);
+app.get('/my-courses.php', requireStudentSession, (req, res) =>
+  res.sendFile(path.join(__dirname, 'public/frontend/pages/my-courses.html'))
+);
+app.get('/courseReg/public/frontend/pages/my-courses.php', requireStudentSession, (req, res) =>
   res.sendFile(path.join(__dirname, 'public/frontend/pages/my-courses.html'))
 );
 app.get('/dashboard', requireStudentSession, (req, res) =>

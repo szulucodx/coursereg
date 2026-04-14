@@ -11,14 +11,19 @@
   <link rel="stylesheet" href="/css/style.css"/>
 </head>
 <body class="register-page">
+<script>
+  if (window.location.port === '5501') {
+    window.location.replace('http://localhost:3000/register.php');
+  }
+</script>
 <nav class="navbar navbar-expand-lg navbar-dark">
   <div class="container">
-    <a href="/" class="navbar-brand">🎓 BFU Portal</a>
+    <a href="/login.php" class="navbar-brand">🎓 BFU Portal</a>
     <div class="d-flex align-items-center gap-3">
-      <a href="/" class="nav-link">Login</a>
-      <a href="/register" class="nav-link active">Register</a>
+      <a href="/login.php" class="nav-link">Login</a>
+      <a href="/register.php" class="nav-link active">Register</a>
       <a href="/courses" class="nav-link">Browse Courses</a>
-      <a href="/my-courses" class="nav-link">My Courses</a>
+      <a href="/my-courses.php" class="nav-link">My Courses</a>
     </div>
   </div>
 </nav>
@@ -37,7 +42,7 @@
 
       <div id="msg"></div>
 
-      <form id="regForm" class="register-form-grid">
+      <form id="regForm" class="register-form-grid" action="/register.php" method="post">
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label fw-semibold">First Name</label>
@@ -101,7 +106,7 @@
 
       <hr class="my-4"/>
       <p class="text-center mb-0 register-signin-text">
-        Already registered? <a href="/" class="fw-semibold">Login here</a>
+        Already registered? <a href="/login.php" class="fw-semibold">Login here</a>
       </p>
     </div>
   </div>
@@ -150,7 +155,7 @@
 
       if (data && data.success) {
         msg.innerHTML = `<div class="alert alert-success">✅ ${data.message}</div>`;
-        setTimeout(() => window.location.href = '/', 1800);
+        setTimeout(() => window.location.href = '/login.php', 1800);
         return;
       }
 
