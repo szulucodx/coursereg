@@ -9,7 +9,7 @@
 </head>
 <body>
 <script>
-  if (window.location.port === '5501') {
+  if (window.location.port !== '3000') {
     window.location.replace('http://localhost:3000/my-courses');
   }
 </script>
@@ -20,7 +20,7 @@
     <a href="/dashboard" class="navbar-brand">🎓 BFU Portal</a>
     <div class="d-flex align-items-center gap-3">
       <a href="/courses"    class="nav-link">Browse Courses</a>
-      <a href="/my-courses.php" class="nav-link active">My Courses</a>
+      <a href="/my-courses" class="nav-link active">My Courses</a>
       <span class="text-white-50">|</span>
       <span class="text-white fw-semibold" id="nav-username"></span>
       <button class="btn btn-sm btn-outline-light" onclick="logout()">Logout</button>
