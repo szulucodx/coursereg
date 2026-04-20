@@ -109,6 +109,10 @@
         <div class="p-3 rounded" style="background:#f0f4f8;">
           <div class="fw-bold fs-5" id="modal-code"></div>
           <div class="text-muted"  id="modal-name"></div>
+          <div class="mt-2">
+            <label for="modal-section-select" class="form-label small text-muted mb-1">Select Section</label>
+            <select id="modal-section-select" class="form-select form-select-sm"></select>
+          </div>
           <div class="mt-2 small"  id="modal-prereqs"></div>
         </div>
         <div id="modal-msg" class="mt-3"></div>
@@ -125,8 +129,8 @@
 <script src="/js/app.js"></script>
 <script>
   let allCourses = [];
-  let selectedCode = '';
-  let detailsCode = '';
+  let selectedSectionId = null;
+  let detailsSectionId = null;
   const detailsModal = new bootstrap.Modal(document.getElementById('detailsModal'));
   const modal = new bootstrap.Modal(document.getElementById('enrolModal'));
   (async () => {
@@ -172,19 +176,19 @@
               <span class="badge dept-badge" style="background:#1A3C5E;">${c.DepartmentName}</span>
               <span class="badge" style="background:#6c757d;">${c.CreditHours} Credits</span>
             </div>
-            <div class="fw-bold text-muted small">${c.CourseCode}</div>
+            <div class="fw-bold text-muted small">${c.CourseCode} • Section ${c.Section_ID}</div>
             <h6 class="fw-bold mb-2" style="color:#1A3C5E;">${c.CourseName}</h6>
             <div class="text-muted small mb-1">👨‍🏫 ${c.LecturerName || 'TBA'}</div>
-            <div class="text-muted small mb-2">📅 ${c.Semester}</div>
+            <div class="text-muted small mb-2">📅 ${c.Semester} ${c.Year} • ${c.TimeSlot} • Room ${c.Room_No}</div>
             <div class="text-muted small mb-3">${c.Description ? c.Description.slice(0, 100) + (c.Description.length > 100 ? '...' : '') : 'No description available.'}</div>
             <div class="d-flex justify-content-between align-items-center mt-auto gap-2">
               <span class="${seatClass} small">${seatText}</span>
               <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="openCourseDetails('${c.CourseCode}')">Details</button>
+                <button class="btn btn-sm btn-outline-primary fw-semibold" onclick="openCourseDetails(${c.Section_ID})">Details</button>
                 <button
                   class="btn btn-sm btn-primary fw-semibold"
                   ${left <= 0 ? 'disabled' : ''}
-                  onclick="openEnrolModal('${c.CourseCode}', '${c.CourseName.replace(/'/g,"\\'")}')">
+                  onclick="openEnrolModal(${c.Section_ID}, '${c.CourseCode}', '${c.CourseName.replace(/'/g,"\\'")}')">
                   Enrol
                 </button>
               </div>
@@ -202,7 +206,8 @@
     const seats  = document.getElementById('seatsFilter').value;
     const filtered = allCourses.filter(c => {
       const matchSearch = c.CourseName.toLowerCase().includes(search) ||
-                          c.CourseCode.toLowerCase().includes(search);
+                          c.CourseCode.toLowerCase().includes(search) ||
+                          String(c.Section_ID).includes(search);
       const matchDept   = !dept || c.DepartmentName === dept;
       const matchSeats  = seats !== 'available' || c.SeatsLeft > 0;
       return matchSearch && matchDept && matchSeats;
@@ -214,11 +219,27 @@
   document.getElementById('deptFilter').addEventListener('change', applyFilters);
   document.getElementById('seatsFilter').addEventListener('change', applyFilters);
 
-  async function openEnrolModal(code, name) {
-    selectedCode = code;
-    document.getElementById('modal-code').textContent = code;
+  async function openEnrolModal(sectionId, code, name) {
+    selectedSectionId = Number(sectionId);
+    document.getElementById('modal-code').textContent = `${code} • Section ${sectionId}`;
     document.getElementById('modal-name').textContent = name;
     document.getElementById('modal-msg').innerHTML = '';
+
+    const sectionSelect = document.getElementById('modal-section-select');
+    const sectionsForCourse = allCourses.filter(c => c.CourseCode === code && c.SeatsLeft > 0);
+    sectionSelect.innerHTML = sectionsForCourse.map(s => {
+      const selected = Number(s.Section_ID) === selectedSectionId ? 'selected' : '';
+      return `<option value="${s.Section_ID}" ${selected}>Section ${s.Section_ID} • ${s.Semester} ${s.Year} • ${s.TimeSlot} • Room ${s.Room_No}</option>`;
+    }).join('');
+
+    sectionSelect.onchange = () => {
+      selectedSectionId = Number(sectionSelect.value);
+      const selectedSection = allCourses.find(c => Number(c.Section_ID) === selectedSectionId);
+      if (selectedSection) {
+        document.getElementById('modal-code').textContent = `${selectedSection.CourseCode} • Section ${selectedSection.Section_ID}`;
+        document.getElementById('modal-name').textContent = selectedSection.CourseName;
+      }
+    };
 
     // Load prerequisites
     const res  = await fetch(`/api/courses/${code}/prerequisites`);
@@ -233,18 +254,18 @@
     modal.show();
   }
 
-  async function openCourseDetails(code) {
-    detailsCode = code;
-    const course = allCourses.find(c => c.CourseCode === code);
+  async function openCourseDetails(sectionId) {
+    detailsSectionId = Number(sectionId);
+    const course = allCourses.find(c => Number(c.Section_ID) === detailsSectionId);
     if (!course) return;
 
-    document.getElementById('details-code').textContent = course.CourseCode;
+    document.getElementById('details-code').textContent = `${course.CourseCode} • Section ${course.Section_ID}`;
     document.getElementById('details-name').textContent = course.CourseName;
     document.getElementById('details-dept').textContent = course.DepartmentName;
     document.getElementById('details-credit').textContent = `${course.CreditHours} Credit Hours`;
     document.getElementById('details-description').textContent = course.Description || 'No course description available.';
     document.getElementById('details-lecturer').textContent = course.LecturerName || 'TBA';
-    document.getElementById('details-semester').textContent = course.Semester;
+    document.getElementById('details-semester').textContent = `${course.Semester} ${course.Year} • ${course.TimeSlot} • Room ${course.Room_No}`;
     document.getElementById('details-seats').textContent = course.SeatsLeft <= 0
       ? 'Full'
       : `${course.SeatsLeft} of ${course.MaxCapacity} seats left`;
@@ -261,7 +282,7 @@
 
     document.getElementById('detailsEnrolBtn').onclick = () => {
       detailsModal.hide();
-      openEnrolModal(code, course.CourseName);
+      openEnrolModal(course.Section_ID, course.CourseCode, course.CourseName);
     };
 
     detailsModal.show();
@@ -274,7 +295,7 @@
     const res  = await fetch('/api/enrollment/enrol', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ courseCode: selectedCode })
+      body: JSON.stringify({ section_id: selectedSectionId })
     });
     const data = await res.json();
 

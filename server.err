@@ -1,0 +1,69 @@
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:3000
+ * Running on http://192.168.243.222:3000
+Press CTRL+C to quit
+ * Restarting with stat
+ * Debugger is active!
+ * Debugger PIN: 117-970-863
+127.0.0.1 - - [15/Apr/2026 16:48:40] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:48:43] "GET /css/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:48:44] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:48:45] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [15/Apr/2026 16:48:55] "GET / HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:48:55] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:48:55] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:49:11] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:49:12] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:49:12] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:49:14] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [15/Apr/2026 16:49:21] "GET / HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:49:21] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:49:22] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:50:28] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:50:39] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:50:40] "GET /dashboard HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:50:40] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:50:40] "GET /js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [15/Apr/2026 16:50:40] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [15/Apr/2026 16:50:41] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [15/Apr/2026 16:50:41] "GET /api/enrollment/my HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 07:43:28] "GET /login HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 07:43:28] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 07:43:28] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 07:43:29] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [16/Apr/2026 07:43:29] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [16/Apr/2026 07:43:49] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:53:39] "GET /login HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:53:40] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:53:40] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:53:41] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [16/Apr/2026 16:53:55] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:53:56] "GET /dashboard HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:53:56] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:53:56] "GET /js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:53:56] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:53:56] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [16/Apr/2026 16:53:56] "GET /api/enrollment/my HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:13] "GET /my-courses HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:13] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:54:13] "GET /js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:54:13] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:13] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [16/Apr/2026 16:54:14] "GET /api/enrollment/my HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:25] "GET /courses HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:25] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:54:26] "GET /js/app.js HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:54:26] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:26] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [16/Apr/2026 16:54:26] "GET /api/courses HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:35] "POST /api/auth/logout HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:35] "GET /login HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:54:35] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:54:35] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:54:36] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -
+127.0.0.1 - - [16/Apr/2026 16:57:28] "GET /dashboard HTTP/1.1" 302 -
+127.0.0.1 - - [16/Apr/2026 16:57:28] "GET / HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:57:28] "GET /css/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [16/Apr/2026 16:57:29] "GET /api/auth/session HTTP/1.1" 200 -
+127.0.0.1 - - [16/Apr/2026 16:57:29] "GET /wsritwickdey.LiveServer/ws HTTP/1.1" 400 -

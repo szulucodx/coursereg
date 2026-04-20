@@ -260,26 +260,34 @@ def get_courses():
         courses = db.query(
             '''
             SELECT
+                            s.Section_ID,
+                            s.Course_ID AS CourseCode,
               c.CourseCode,
               c.CourseName,
               c.CreditHours,
-              c.MaxCapacity,
-              c.Semester,
+                            s.MaxCapacity,
+                            s.Semester,
+                            s.Year,
+                            s.TimeSlot,
+                            s.Room_No,
               c.Description,
               d.DepartmentName,
-              CONCAT(l.FirstName, ' ', l.LastName) AS LecturerName,
+                            CONCAT(l.FirstName, ' ', l.LastName) AS LecturerName,
               COUNT(e.EnrollmentID) AS EnrolledCount,
-              (c.MaxCapacity - COUNT(e.EnrollmentID)) AS SeatsLeft
-            FROM Course c
+                            (s.MaxCapacity - COUNT(e.EnrollmentID)) AS SeatsLeft
+                        FROM Section s
+                        JOIN Course c ON s.Course_ID = c.CourseCode
             JOIN Department d ON c.DepartmentID = d.DepartmentID
-            LEFT JOIN Lecturer l ON c.LecturerID = l.LecturerID
+                        LEFT JOIN Lecturer l ON s.Instructor_ID = l.LecturerID
             LEFT JOIN Enrollment e
-                   ON c.CourseCode = e.CourseCode AND e.Status = 'Active'
+                                     ON s.Section_ID = e.Section_ID AND e.Status = 'Active'
             WHERE c.IsActive = 1
-            GROUP BY c.CourseCode, c.CourseName, c.CreditHours,
-                     c.MaxCapacity, c.Semester, c.Description,
-                     d.DepartmentName, l.FirstName, l.LastName
-            ORDER BY c.CourseCode
+                            AND s.IsActive = 1
+                        GROUP BY s.Section_ID, s.Course_ID,
+                                         c.CourseCode, c.CourseName, c.CreditHours,
+                                         s.MaxCapacity, s.Semester, s.Year, s.TimeSlot, s.Room_No, c.Description,
+                                         d.DepartmentName, l.FirstName, l.LastName
+                        ORDER BY c.CourseCode, s.Section_ID
             '''
         )
         return jsonify({'success': True, 'courses': courses})
@@ -313,11 +321,13 @@ def enrol_course():
     try:
         student = _current_student()
         payload = request.get_json(silent=True) or request.form
-        course_code = (payload.get('courseCode') or '').strip()
+        section_id_raw = payload.get('section_id') or payload.get('sectionID')
         semester = os.getenv('CURRENT_SEMESTER', 'Semester 1 2026')
 
-        if not course_code:
-            return _json_error('Course code is required.')
+        if not section_id_raw:
+            return _json_error('Section ID is required.')
+
+        section_id = int(section_id_raw)
 
         connection = db.get_connection()
         with connection.cursor() as cursor:
@@ -327,53 +337,59 @@ def enrol_course():
                 '''
                 SELECT EnrollmentID
                 FROM Enrollment
-                WHERE StudentID = %s AND CourseCode = %s AND Semester = %s AND Status = 'Active'
+                WHERE Student_ID = %s AND Section_ID = %s AND Status = 'Active'
                 ''',
-                (student['id'], course_code, semester),
+                (student['id'], section_id),
             )
             if cursor.fetchone():
                 connection.rollback()
                 return jsonify({
                     'success': False,
-                    'message': 'You are already enrolled in this course.'
+                    'message': 'You are already enrolled in this section.'
                 })
 
             cursor.execute(
-                'SELECT MaxCapacity FROM Course WHERE CourseCode = %s FOR UPDATE',
-                (course_code,),
+                '''
+                SELECT Section_ID, Course_ID, MaxCapacity
+                FROM Section
+                WHERE Section_ID = %s AND IsActive = 1
+                FOR UPDATE
+                ''',
+                (section_id,),
             )
-            course = cursor.fetchone()
-            if not course:
+            section = cursor.fetchone()
+            if not section:
                 connection.rollback()
-                return jsonify({'success': False, 'message': 'Course not found.'})
+                return jsonify({'success': False, 'message': 'Section not found.'})
 
             cursor.execute(
                 '''
                 SELECT COUNT(*) AS enrolled
                 FROM Enrollment
-                WHERE CourseCode = %s AND Status = 'Active'
+                WHERE Section_ID = %s AND Status = 'Active'
                 ''',
-                (course_code,),
+                (section_id,),
             )
             enrolled = cursor.fetchone()['enrolled']
-            if enrolled >= course['MaxCapacity']:
+            if enrolled >= section['MaxCapacity']:
                 connection.rollback()
                 return jsonify({
                     'success': False,
-                    'message': 'This course is full. No seats available.'
+                    'message': 'This section is full. No seats available.'
                 })
 
             cursor.execute(
                 'SELECT PrerequisiteCode FROM CoursePrerequisite WHERE CourseCode = %s',
-                (course_code,),
+                (section['Course_ID'],),
             )
             prereqs = cursor.fetchall()
             for prereq in prereqs:
                 cursor.execute(
                     '''
                     SELECT EnrollmentID
-                    FROM Enrollment
-                    WHERE StudentID = %s AND CourseCode = %s AND Status = 'Completed'
+                    FROM Enrollment e
+                    JOIN Section s ON e.Section_ID = s.Section_ID
+                    WHERE e.Student_ID = %s AND s.Course_ID = %s AND e.Status = 'Completed'
                     ''',
                     (student['id'], prereq['PrerequisiteCode']),
                 )
@@ -386,14 +402,14 @@ def enrol_course():
 
             cursor.execute(
                 '''
-                INSERT INTO Enrollment (StudentID, CourseCode, EnrollDate, Status, Semester)
-                VALUES (%s, %s, CURDATE(), 'Active', %s)
+                INSERT INTO Enrollment (Student_ID, Section_ID, EnrollmentDate, Status)
+                VALUES (%s, %s, CURDATE(), 'Active')
                 ''',
-                (student['id'], course_code, semester),
+                (student['id'], section_id),
             )
             connection.commit()
 
-        return jsonify({'success': True, 'message': f'Successfully enrolled in {course_code}!'})
+        return jsonify({'success': True, 'message': f'Successfully enrolled in section {section_id}!'} )
     except Exception as exc:
         if connection:
             connection.rollback()
@@ -413,24 +429,28 @@ def my_enrollments():
             '''
             SELECT
               e.EnrollmentID,
-              e.CourseCode,
+                            e.Section_ID,
+                            c.CourseCode,
               c.CourseName,
               c.CreditHours,
               c.Description,
-              c.MaxCapacity,
-              c.Semester AS CourseDay,
+                            s.MaxCapacity,
+                            s.Semester,
+                            s.Year,
+                            s.TimeSlot,
+                            s.Room_No,
               d.DepartmentName,
-              CONCAT(l.FirstName, ' ', l.LastName) AS LecturerName,
+                            CONCAT(l.FirstName, ' ', l.LastName) AS LecturerName,
               e.Status,
               e.Grade,
-              e.EnrollDate,
-              e.Semester
+                            e.EnrollmentDate
             FROM Enrollment e
-            JOIN Course c ON e.CourseCode = c.CourseCode
+                        JOIN Section s ON e.Section_ID = s.Section_ID
+                        JOIN Course c ON s.Course_ID = c.CourseCode
             JOIN Department d ON c.DepartmentID = d.DepartmentID
-            LEFT JOIN Lecturer l ON c.LecturerID = l.LecturerID
-            WHERE e.StudentID = %s
-            ORDER BY e.Semester, c.CourseCode
+                        LEFT JOIN Lecturer l ON s.Instructor_ID = l.LecturerID
+                        WHERE e.Student_ID = %s
+                        ORDER BY s.Year DESC, s.Semester, c.CourseCode, s.Section_ID
             ''',
             (student['id'],),
         )
@@ -455,7 +475,7 @@ def drop_enrollment():
             '''
             UPDATE Enrollment
             SET Status = 'Dropped'
-            WHERE EnrollmentID = %s AND StudentID = %s AND Status = 'Active'
+            WHERE EnrollmentID = %s AND Student_ID = %s AND Status = 'Active'
             ''',
             (enrollment_id, student['id']),
         )
@@ -478,15 +498,23 @@ def enrolment_report():
             SELECT
               c.CourseCode,
               c.CourseName,
+                            s.Section_ID,
+                            s.Semester,
+                            s.Year,
+                            s.TimeSlot,
+                            s.Room_No,
               d.DepartmentName,
-              c.MaxCapacity,
+                            s.MaxCapacity,
               COUNT(e.EnrollmentID) AS ActiveEnrolments,
-              ROUND(COUNT(e.EnrollmentID) * 100.0 / c.MaxCapacity, 1) AS FillRatePct
-            FROM Course c
+                            ROUND(COUNT(e.EnrollmentID) * 100.0 / s.MaxCapacity, 1) AS FillRatePct
+                        FROM Section s
+                        JOIN Course c ON s.Course_ID = c.CourseCode
             JOIN Department d ON c.DepartmentID = d.DepartmentID
             LEFT JOIN Enrollment e
-                   ON c.CourseCode = e.CourseCode AND e.Status = 'Active'
-            GROUP BY c.CourseCode, c.CourseName, d.DepartmentName, c.MaxCapacity
+                                     ON s.Section_ID = e.Section_ID AND e.Status = 'Active'
+                        GROUP BY c.CourseCode, c.CourseName,
+                                         s.Section_ID, s.Semester, s.Year, s.TimeSlot, s.Room_No,
+                                         d.DepartmentName, s.MaxCapacity
             ORDER BY FillRatePct DESC
             '''
         )

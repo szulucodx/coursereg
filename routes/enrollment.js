@@ -15,8 +15,12 @@ router.post('/enrol', requireLogin, async (req, res) => {
   let connection;
   try {
     const studentID  = req.session.student.id;
-    const { courseCode } = req.body;
+    const sectionID = Number(req.body.section_id ?? req.body.sectionID);
     const semester   = 'Semester 1 2026';
+
+    if (!sectionID) {
+      return res.json({ success: false, message: 'Section ID is required.' });
+    }
 
     connection = await db.getConnection();
     await connection.beginTransaction();
@@ -24,32 +28,34 @@ router.post('/enrol', requireLogin, async (req, res) => {
     // 1. Check already enrolled
     const [existing] = await connection.query(
       `SELECT EnrollmentID FROM Enrollment
-       WHERE StudentID = ? AND CourseCode = ? AND Semester = ? AND Status = 'Active'`,
-      [studentID, courseCode, semester]
+       WHERE Student_ID = ? AND Section_ID = ? AND Status = 'Active'`,
+      [studentID, sectionID]
     );
     if (existing.length > 0) {
       await connection.rollback();
-      return res.json({ success: false, message: 'You are already enrolled in this course.' });
+      return res.json({ success: false, message: 'You are already enrolled in this section.' });
     }
 
     // 2. Check capacity
     const [capRows] = await connection.query(
-      `SELECT c.MaxCapacity,
+      `SELECT s.Section_ID,
+              s.Course_ID,
+              s.MaxCapacity,
               COUNT(e.EnrollmentID) AS enrolled
-       FROM Course c
-       LEFT JOIN Enrollment e ON c.CourseCode = e.CourseCode AND e.Status = 'Active'
-       WHERE c.CourseCode = ?
-       GROUP BY c.MaxCapacity
+       FROM Section s
+       LEFT JOIN Enrollment e ON s.Section_ID = e.Section_ID AND e.Status = 'Active'
+       WHERE s.Section_ID = ? AND s.IsActive = 1
+       GROUP BY s.Section_ID, s.Course_ID, s.MaxCapacity
        FOR UPDATE`,
-      [courseCode]
+      [sectionID]
     );
     if (capRows.length === 0) {
       await connection.rollback();
-      return res.json({ success: false, message: 'Course not found.' });
+      return res.json({ success: false, message: 'Section not found.' });
     }
     if (capRows[0].enrolled >= capRows[0].MaxCapacity) {
       await connection.rollback();
-      return res.json({ success: false, message: 'This course is full. No seats available.' });
+      return res.json({ success: false, message: 'This section is full. No seats available.' });
     }
 
     // 3. Check prerequisites
@@ -57,13 +63,15 @@ router.post('/enrol', requireLogin, async (req, res) => {
       `SELECT cp.PrerequisiteCode
        FROM CoursePrerequisite cp
        WHERE cp.CourseCode = ?`,
-      [courseCode]
+      [capRows[0].Course_ID]
     );
 
     for (const prereq of prereqs) {
       const [done] = await connection.query(
-        `SELECT EnrollmentID FROM Enrollment
-         WHERE StudentID = ? AND CourseCode = ? AND Status = 'Completed'`,
+        `SELECT e.EnrollmentID
+         FROM Enrollment e
+         JOIN Section s ON e.Section_ID = s.Section_ID
+         WHERE e.Student_ID = ? AND s.Course_ID = ? AND e.Status = 'Completed'`,
         [studentID, prereq.PrerequisiteCode]
       );
       if (done.length === 0) {
@@ -77,14 +85,14 @@ router.post('/enrol', requireLogin, async (req, res) => {
 
     // 4. Enrol
     await connection.query(
-      `INSERT INTO Enrollment (StudentID, CourseCode, EnrollDate, Status, Semester)
-       VALUES (?, ?, CURRENT_DATE, 'Active', ?)`,
-      [studentID, courseCode, semester]
+      `INSERT INTO Enrollment (Student_ID, Section_ID, EnrollmentDate, Status)
+       VALUES (?, ?, CURRENT_DATE, 'Active')`,
+      [studentID, sectionID]
     );
 
     await connection.commit();
 
-    res.json({ success: true, message: `Successfully enrolled in ${courseCode}!` });
+    res.json({ success: true, message: `Successfully enrolled in section ${sectionID}!` });
   } catch (err) {
     if (connection) {
       await connection.rollback();
@@ -105,24 +113,28 @@ router.get('/my', requireLogin, async (req, res) => {
     const [rows] = await db.query(`
       SELECT
         e.EnrollmentID,
-        e.CourseCode,
+        e.Section_ID,
+        c.CourseCode,
         c.CourseName,
         c.CreditHours,
         c.Description,
-        c.MaxCapacity,
-        c.Semester AS CourseDay,
+        s.MaxCapacity,
+        s.Semester,
+        s.Year,
+        s.TimeSlot,
+        s.Room_No,
         d.DepartmentName,
         CONCAT(l.FirstName, ' ', l.LastName) AS LecturerName,
         e.Status,
         e.Grade,
-        e.EnrollDate,
-        e.Semester
+        e.EnrollmentDate
       FROM Enrollment e
-      JOIN Course     c ON e.CourseCode  = c.CourseCode
+      JOIN Section   s ON e.Section_ID = s.Section_ID
+      JOIN Course     c ON s.Course_ID = c.CourseCode
       JOIN Department d ON c.DepartmentID = d.DepartmentID
-      LEFT JOIN Lecturer l ON c.LecturerID = l.LecturerID
-      WHERE e.StudentID = ?
-      ORDER BY e.Semester, c.CourseCode
+      LEFT JOIN Lecturer l ON s.Instructor_ID = l.LecturerID
+      WHERE e.Student_ID = ?
+      ORDER BY s.Year DESC, s.Semester, c.CourseCode, s.Section_ID
     `, [studentID]);
     res.json({ success: true, enrollments: rows });
   } catch (err) {
@@ -139,7 +151,7 @@ router.post('/drop', requireLogin, async (req, res) => {
 
     const [result] = await db.query(
       `UPDATE Enrollment SET Status = 'Dropped'
-       WHERE EnrollmentID = ? AND StudentID = ? AND Status = 'Active'`,
+       WHERE EnrollmentID = ? AND Student_ID = ? AND Status = 'Active'`,
       [enrollmentID, studentID]
     );
 

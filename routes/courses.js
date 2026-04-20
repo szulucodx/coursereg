@@ -7,26 +7,34 @@ router.get('/', async (req, res) => {
   try {
     const [courses] = await db.query(`
       SELECT
+        s.Section_ID,
+        s.Course_ID AS CourseCode,
         c.CourseCode,
         c.CourseName,
         c.CreditHours,
-        c.MaxCapacity,
-        c.Semester,
+        s.MaxCapacity,
+        s.Semester,
+        s.Year,
+        s.TimeSlot,
+        s.Room_No,
         c.Description,
         d.DepartmentName,
         CONCAT(l.FirstName, ' ', l.LastName) AS LecturerName,
         COUNT(e.EnrollmentID)                AS EnrolledCount,
-        (c.MaxCapacity - COUNT(e.EnrollmentID)) AS SeatsLeft
-      FROM Course c
+        (s.MaxCapacity - COUNT(e.EnrollmentID)) AS SeatsLeft
+      FROM Section s
+      JOIN Course c ON s.Course_ID = c.CourseCode
       JOIN Department d ON c.DepartmentID = d.DepartmentID
-      LEFT JOIN Lecturer l ON c.LecturerID = l.LecturerID
+      LEFT JOIN Lecturer l ON s.Instructor_ID = l.LecturerID
       LEFT JOIN Enrollment e
-             ON c.CourseCode = e.CourseCode AND e.Status = 'Active'
+             ON s.Section_ID = e.Section_ID AND e.Status = 'Active'
       WHERE c.IsActive = 1
-      GROUP BY c.CourseCode, c.CourseName, c.CreditHours,
-               c.MaxCapacity, c.Semester, c.Description,
+        AND s.IsActive = 1
+      GROUP BY s.Section_ID, s.Course_ID,
+               c.CourseCode, c.CourseName, c.CreditHours,
+               s.MaxCapacity, s.Semester, s.Year, s.TimeSlot, s.Room_No, c.Description,
                d.DepartmentName, l.FirstName, l.LastName
-      ORDER BY c.CourseCode
+      ORDER BY c.CourseCode, s.Section_ID
     `);
     res.json({ success: true, courses });
   } catch (err) {

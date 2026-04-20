@@ -196,12 +196,12 @@
 
     tbody.innerHTML = enrollments.map(e => `
       <tr>
-        <td><span class="fw-bold" style="color:#1A3C5E;">${e.CourseCode}</span></td>
+        <td><span class="fw-bold" style="color:#1A3C5E;">${e.CourseCode} / S-${e.Section_ID}</span></td>
         <td>${e.CourseName}</td>
         <td><span class="badge dept-badge" style="background:#1A3C5E;">${e.DepartmentName}</span></td>
         <td>${e.LecturerName || 'TBA'}</td>
         <td class="text-center">${e.CreditHours}</td>
-        <td>${e.Semester}</td>
+        <td>${e.Semester} ${e.Year}</td>
         <td class="text-center fw-bold">${e.Grade || '—'}</td>
         <td>
           <span class="badge" style="background:${statusColors[e.Status] || '#999'};">
@@ -210,7 +210,7 @@
         </td>
         <td>
           <div class="d-flex gap-2">
-            <button class="btn btn-sm btn-outline-primary" onclick="openDetails('${e.CourseCode}')">Details</button>
+            <button class="btn btn-sm btn-outline-primary" onclick="openDetails(${e.EnrollmentID})">Details</button>
             ${e.Status === 'Active'
               ? `<button class="btn btn-sm btn-outline-danger"
                    onclick="openDropModal(${e.EnrollmentID}, '${e.CourseName.replace(/'/g,"\\'")}')">
@@ -224,17 +224,17 @@
     ).join('');
   }
 
-  function openDetails(code) {
-    const course = allEnrollments.find(e => e.CourseCode === code);
+  function openDetails(enrollmentId) {
+    const course = allEnrollments.find(e => Number(e.EnrollmentID) === Number(enrollmentId));
     if (!course) return;
 
-    document.getElementById('details-code').textContent = course.CourseCode;
+    document.getElementById('details-code').textContent = `${course.CourseCode} • Section ${course.Section_ID}`;
     document.getElementById('details-name').textContent = course.CourseName;
     document.getElementById('details-dept').textContent = course.DepartmentName;
     document.getElementById('details-credit').textContent = `${course.CreditHours} Credit Hours`;
     document.getElementById('details-description').textContent = course.Description || 'No course description available.';
     document.getElementById('details-lecturer').textContent = course.LecturerName || 'TBA';
-    document.getElementById('details-semester').textContent = course.Semester;
+    document.getElementById('details-semester').textContent = `${course.Semester} ${course.Year} • ${course.TimeSlot} • Room ${course.Room_No}`;
     document.getElementById('details-seats').textContent = course.MaxCapacity ? `${course.MaxCapacity} total seats` : 'Capacity not available';
 
     detailsModal.show();
