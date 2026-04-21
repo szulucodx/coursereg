@@ -9,7 +9,6 @@ router.get('/', async (req, res) => {
       SELECT
         s.Section_ID,
         s.Course_ID AS CourseCode,
-        c.CourseCode,
         c.CourseName,
         c.CreditHours,
         s.MaxCapacity,
